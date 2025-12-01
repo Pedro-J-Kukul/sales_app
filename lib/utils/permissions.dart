@@ -18,60 +18,31 @@ class Permissions {
   }
 
   // SALES PERMISSIONS
-
-  // Check if user can view sales (cashiers and admins only)
-  static bool canViewSales(String role) {
-    return isCashierOrAbove(role);
-  }
-
-  // Check if user can create sales (cashiers and admins)
-  static bool canCreateSales(String role) {
-    return isCashierOrAbove(role);
-  }
-
-  // Check if user can edit sales (admins only)
-  static bool canEditSales(String role) {
-    return isAdmin(role);
-  }
-
-  // Check if user can delete sales (admins only)
-  static bool canDeleteSales(String role) {
-    return isAdmin(role);
-  }
-
-  // USER PERMISSIONS
-
-  // Check if user can manage users
-  static bool canManageUsers(String role) {
-    return isCashierOrAbove(role);
-  }
+  static bool canViewSales(String role) => isCashierOrAbove(role);
+  static bool canCreateSales(String role) => isCashierOrAbove(role);
+  static bool canEditSales(String role) => isAdmin(role);
+  static bool canDeleteSales(String role) => isAdmin(role);
 
   // PRODUCT PERMISSIONS
+  static bool canViewProducts(String role) => true; // Everyone
+  static bool canCreateProducts(String role) => isCashierOrAbove(role);
+  static bool canEditProducts(String role) => isAdmin(role);
+  static bool canDeleteProducts(String role) => isAdmin(role);
 
-  // Check if user can manage products
-  static bool canManageProducts(String role) {
-    return isCashierOrAbove(role);
-  }
+  // Deprecated: Use granular permissions instead
+  static bool canManageProducts(String role) => isCashierOrAbove(role);
+
+  // USER PERMISSIONS
+  static bool canViewUsers(String role) => isCashierOrAbove(role);
+  static bool canCreateUsers(String role) => isAdmin(role);
+  static bool canEditUsers(String role) => isAdmin(role);
+  static bool canDeleteUsers(String role) => isAdmin(role);
+
+  // Deprecated: Use granular permissions instead
+  static bool canManageUsers(String role) => isAdmin(role);
 
   // OTHER PERMISSIONS
-
-  // Check if user can view reports
-  static bool canViewReports(String role) {
-    return isCashierOrAbove(role);
-  }
-
-  // Check if user can delete other users
-  static bool canDeleteUsers(String role) {
-    return isAdmin(role);
-  }
-
-  // Check if user can edit user roles
-  static bool canEditUserRoles(String role) {
-    return isAdmin(role);
-  }
-
-  // Check if user can activate/deactivate users
-  static bool canToggleUserStatus(String role) {
-    return isAdmin(role);
-  }
+  static bool canViewReports(String role) => isCashierOrAbove(role);
+  static bool canEditUserRoles(String role) => isAdmin(role);
+  static bool canToggleUserStatus(String role) => isAdmin(role);
 }

@@ -1,7 +1,5 @@
-// File: lib/screens/auth/login_screen.dart
-
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import 'package:sales_app/utils/api_client.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,9 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _checkLoginStatus() async {
     try {
-      final isLoggedIn = await AuthService.isLoggedIn();
+      final isLoggedIn = await ApiClient.isLoggedIn();
       if (isLoggedIn && mounted) {
-        final user = await AuthService.getCurrentUser();
+        final user = await ApiClient.getCurrentUser();
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -59,13 +57,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.isEmpty || password.isEmpty) {
       setState(() {
         isLoading = false;
-        errorMessage = 'Please enter both email and password. ';
+        errorMessage = 'Please enter both email and password.';
       });
       return;
     }
 
     try {
-      final result = await AuthService.login(email, password);
+      final result = await ApiClient.login(email, password);
 
       if (!mounted) return;
 
@@ -111,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return AlertDialog(
           title: const Text('Account Not Activated'),
           content: const Text(
-            'Your account needs to be activated before you can login.  '
+            'Your account needs to be activated before you can login. '
             'Please check your email for the activation token.',
           ),
           actions: [

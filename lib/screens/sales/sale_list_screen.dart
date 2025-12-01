@@ -2,8 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import '../../models/sale.dart';
-import '../../services/sale_service.dart';
+import 'package:sales_app/models/sale.dart';
+import 'package:sales_app/utils/api_client.dart';
+import 'package:sales_app/widgets/custom_list_card.dart';
+import 'package:sales_app/widgets/custom_pagination.dart';
+import 'package:sales_app/widgets/custom_state_views.dart';
 import 'sale_detail_screen.dart';
 
 class SalesListScreen extends StatefulWidget {
@@ -51,7 +54,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
     try {
       logger.i('Loading sales - Page: $currentPage');
 
-      final result = await SaleService.getSales(
+      final result = await ApiClient.getSales(
         page: currentPage,
         pageSize: pageSize,
       );
@@ -102,71 +105,31 @@ class _SalesListScreenState extends State<SalesListScreen> {
   }
 
   Widget _buildSaleCard(Sale sale) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue,
-          child: Text(
-            sale.id.toString(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+    return CustomListCard(
+      leading: CircleAvatar(
+        backgroundColor: Colors.blue,
+        child: Text(
+          sale.id.toString(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        title: Text('Sale #${sale.id}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Cashier ID: ${sale.userId} • Product ID: ${sale.productId}',
-            ), // Corrected labels
-            Text('Quantity: ${sale.quantity}'),
-            const SizedBox(height: 4),
-            Text(
-              'Sold: ${_formatDate(sale.soldAt)}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => _onSaleTap(sale),
       ),
-    );
-  }
-
-  Widget _buildPagination() {
-    if (metadata.isEmpty) return const SizedBox.shrink();
-
-    final totalPages = metadata['total_pages'] ?? 1;
-    final currentPageMeta = metadata['current_page'] ?? 1;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Page $currentPageMeta of $totalPages'),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: currentPage > 1
-                      ? () => _changePage(currentPage - 1)
-                      : null,
-                  icon: const Icon(Icons.chevron_left),
-                ),
-                IconButton(
-                  onPressed: currentPage < totalPages
-                      ? () => _changePage(currentPage + 1)
-                      : null,
-                  icon: const Icon(Icons.chevron_right),
-                ),
-              ],
-            ),
-          ],
-        ),
+      title: Text('Sale #${sale.id}'),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Cashier ID: ${sale.userId} • Product ID: ${sale.productId}'),
+          Text('Quantity: ${sale.quantity}'),
+          const SizedBox(height: 4),
+          Text(
+            'Sold: ${_formatDate(sale.soldAt)}',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
       ),
+      onTap: () => _onSaleTap(sale),
     );
   }
 
@@ -202,42 +165,14 @@ class _SalesListScreenState extends State<SalesListScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : errorMessage != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error, size: 64, color: Colors.red[300]),
-                          const SizedBox(height: 16),
-                          Text(
-                            errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.red[700]),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _refreshSales,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                  ? CustomErrorView(
+                      message: errorMessage!,
+                      onRetry: _refreshSales,
                     )
                   : sales.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_cart,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'No sales found',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                        ],
-                      ),
+                  ? const CustomEmptyView(
+                      message: 'No sales found',
+                      icon: Icons.shopping_cart,
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
@@ -246,8 +181,12 @@ class _SalesListScreenState extends State<SalesListScreen> {
                           _buildSaleCard(sales[index]),
                     ),
             ),
-
-            _buildPagination(),
+            if (metadata.isNotEmpty)
+              CustomPagination(
+                currentPage: metadata['current_page'] ?? 1,
+                totalPages: metadata['total_pages'] ?? 1,
+                onPageChanged: _changePage,
+              ),
           ],
         ),
       ),

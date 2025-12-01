@@ -1,11 +1,12 @@
-// File: lib/screens/products/products_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import '../../models/product.dart';
-import '../../services/product_service.dart';
-import '../../services/auth_service.dart';
-import '../../utils/permissions.dart';
+import 'package:sales_app/models/product.dart';
+import 'package:sales_app/utils/api_client.dart';
+import 'package:sales_app/services/auth_service.dart';
+import 'package:sales_app/utils/permissions.dart';
+import 'package:sales_app/widgets/custom_list_card.dart';
+import 'package:sales_app/widgets/custom_pagination.dart';
+import 'package:sales_app/widgets/custom_state_views.dart';
 import 'product_detail_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -87,7 +88,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         maxPrice = double.tryParse(maxPriceController.text);
       }
 
-      final result = await ProductService.getProducts(
+      final result = await ApiClient.getProducts(
         search: searchController.text.isEmpty ? null : searchController.text,
         minPrice: minPrice,
         maxPrice: maxPrice,
@@ -176,7 +177,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               controller: searchController,
               decoration: const InputDecoration(
                 labelText: 'Search products',
-                hintText: 'Search by name.. .',
+                hintText: 'Search by name...',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
@@ -225,75 +226,37 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Widget _buildProductCard(Product product) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange,
-          child: Text(
-            product.name[0].toUpperCase(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+    return CustomListCard(
+      leading: CircleAvatar(
+        backgroundColor: Colors.orange,
+        child: Text(
+          product.name[0].toUpperCase(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        title: Text(product.name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '\$${product.price.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Created: ${_formatDate(product.createdAt)}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => _onProductTap(product),
       ),
-    );
-  }
-
-  Widget _buildPagination() {
-    if (metadata.isEmpty) return const SizedBox.shrink();
-
-    final totalPages = metadata['total_pages'] ?? 1;
-    final currentPageMeta = metadata['current_page'] ?? 1;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Page $currentPageMeta of $totalPages'),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: currentPage > 1
-                      ? () => _changePage(currentPage - 1)
-                      : null,
-                  icon: const Icon(Icons.chevron_left),
-                ),
-                IconButton(
-                  onPressed: currentPage < totalPages
-                      ? () => _changePage(currentPage + 1)
-                      : null,
-                  icon: const Icon(Icons.chevron_right),
-                ),
-              ],
+      title: Text(product.name),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '\$${product.price.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Created: ${_formatDate(product.createdAt)}',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
       ),
+      onTap: () => _onProductTap(product),
     );
   }
 
@@ -342,38 +305,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : errorMessage != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error, size: 64, color: Colors.red[300]),
-                          const SizedBox(height: 16),
-                          Text(
-                            errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.red[700]),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _refreshProducts,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                  ? CustomErrorView(
+                      message: errorMessage!,
+                      onRetry: _refreshProducts,
                     )
                   : products.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.inventory, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            'No products found',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                        ],
-                      ),
+                  ? const CustomEmptyView(
+                      message: 'No products found',
+                      icon: Icons.inventory,
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
@@ -382,8 +321,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           _buildProductCard(products[index]),
                     ),
             ),
-
-            _buildPagination(),
+            if (metadata.isNotEmpty)
+              CustomPagination(
+                currentPage: metadata['current_page'] ?? 1,
+                totalPages: metadata['total_pages'] ?? 1,
+                onPageChanged: _changePage,
+              ),
           ],
         ),
       ),
